@@ -1,0 +1,73 @@
+# import packages 
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.ndimage import label, sum
+
+
+# Parameters
+M = 2000       # number of realisations
+L = 120       # lattice size
+pvals  = [0.50,0.52,0.54,0.56,0.58]     # occupation probability
+a = 1.2    # logarithmic binning parameter
+
+def clusNumDensity(M,L,p,a):
+    allarea = np.array([])
+
+    for _ in range(M):
+        # generate configuration
+        z = np.random.rand(L, L)
+        m = z < p
+        lw, num = label(m)
+        labelList = np.arange(lw.max() + 1)
+        area = sum(m, lw, labelList)
+        allarea = np.append(allarea,area)
+
+    n,sbins = np.histogram(allarea,bins=int(max(allarea)))
+
+    # Bin centres
+    s = 0.5 * (sbins[1:] + sbins[:-1])
+
+    # Cluster number density n(s,p;L)
+    nsp = n / (M * L**2)
+
+    # Nonzero indices for plot clarity
+    i = np.nonzero(n)
+
+    # ---- LOG BINS ----
+    logamax = np.ceil(np.log(max(s))/np.log(a))
+    logbins = a**np.arange(0,logamax+1)
+    nl,nlbins = np.histogram(allarea,bins=logbins)
+    ds = np.diff(logbins)
+    sl = 0.5*(logbins[1:]+logbins[:-1])
+    # Cluster number density n(s,p;L)
+    nsl = nl/(M * L**2 * ds)
+
+    # Remove any empty bins 
+    mask = nsl > 0
+    sl_masked = sl[mask]
+    nsl_masked = nsl[mask]
+
+    
+    return sl_masked, nsl_masked
+
+# ---- PLOTS ----
+
+# plot for p values in [0.5,0.58]
+plt.figure(figsize=(7,5))
+for p in pvals:
+    sl_masked, nsl_masked = clusNumDensity(M, L, p, a)
+    plt.loglog(sl_masked, nsl_masked, label=f"p = {p}")
+
+# log axis
+plt.xscale('log')
+plt.yscale('log')
+# make tick labels larger
+plt.xticks(fontsize=14)
+plt.yticks(fontsize=14)
+# axis labels
+plt.xlabel('Cluster Size $s$', fontsize = 15)
+plt.ylabel('Cluster Number Density $n(s,p)$', fontsize=15)
+
+plt.legend()
+plt.tight_layout()
+plt.show()
