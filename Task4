@@ -1,3 +1,6 @@
+# The following code is adapted from:
+# Anders Malthe-Sørenssen, 'Percolation Theory Using Python', Ch. 4, Sec. 4.1
+
 # import packages 
 import numpy as np
 import matplotlib.pyplot as plt
