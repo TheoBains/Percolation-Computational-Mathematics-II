@@ -1,0 +1,186 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.ndimage import label
+from scipy.optimize import curve_fit
+
+PC_EXACT = 0.59275  # Percolation threshold for 2D site percolation (square lattice)
+
+def simulate_system(L, p):
+    """
+    Generates a random lattice and identifies spanning clusters
+    
+    is_spanning (bool): True if any cluster spans the system
+    spanning_density (float): Fraction of sites belonging to spanning clusters
+    """
+    # Generate random grid
+    grid = np.random.rand(L, L) < p
+    
+    
+    # Label clusters
+    structure = np.array([[0,1,0], [1,1,1], [0,1,0]])
+    labeled_grid, num_features = label(grid, structure=structure)
+    
+    if num_features == 0:
+        return False, 0.0
+
+
+    # Check for spanning clusters
+    # check borders to find labels that touch opposite sides.
+    
+    first_row = labeled_grid[0, :]
+    last_row = labeled_grid[-1, :]
+    first_col = labeled_grid[:, 0]
+    last_col = labeled_grid[:, -1]
+    
+    
+    # Find labels that span top-to-bottom
+    vertical_labels = np.intersect1d(first_row[first_row > 0], last_row[last_row > 0])
+    
+    # Find labels that span left-to-right
+    horizontal_labels = np.intersect1d(first_col[first_col > 0], last_col[last_col > 0])
+    
+    # Union of all spanning labels
+    spanning_labels = np.union1d(vertical_labels, horizontal_labels)
+    
+    is_spanning = len(spanning_labels) > 0
+    
+    
+    # Calculate Density P(p, L)
+    # Count sites belonging to ANY spanning cluster
+    if is_spanning:
+        mask = np.isin(labeled_grid, spanning_labels)
+        spanning_mass = np.sum(mask)
+        spanning_density = spanning_mass / (L * L)
+    else:
+        spanning_density = 0.0
+        
+    return is_spanning, spanning_density
+
+def exact_values_L2(p):
+    """
+    Returns exact Pi(p, 2) and P(p, 2) for a 2x2 lattice.
+    
+    Pi(p, 2) from Eq 1.6 in text: 4p^2(1-p)^2 + 4p^3(1-p) + p^4
+    Simplifies to 4p^2 - 4p^3 + p^4
+    
+    P(p, 2): Derived from configurations
+    Mass sum = p^4*4 + 4*p^3(1-p)*3 + 4*p^2(1-p)^2*2
+    Expected Mass = 8p^2 - 4p^3
+    Density P = Mass / 4 = 2p^2 - p^3
+    """
+    # Probability of spanning (Pi)
+    # 4 configs of 2 sites span + 4 configs of 3 sites span + 1 config of 4 sites spans
+    Pi_exact = 4 * p**2 - 4 * p**3 + p**4
+    
+    # Density of spanning cluster (P)
+    # P = (Expected Mass of Spanning Cluster) / L^2
+    P_exact = 2 * p**2 - p**3
+    
+    return Pi_exact, P_exact
+
+def run_experiment():
+    print("Starting Simulation")
+    
+    # Parameters
+    L_values = [2, 4, 8, 16, 32, 64, 128] # Powers of two
+    p_values = np.linspace(0, 1, 50)      # 50 points from 0 to 1
+    n_samples = 200                       # Samples per point (increase for smooth curves)
+    
+    results_Pi = {}
+    results_P = {}
+    
+    for L in L_values:
+        print(f"Simulating L = {L}...")
+        Pi_arr = []
+        P_arr = []
+        
+        current_samples = n_samples if L < 100 else 50
+        
+        for p in p_values:
+            spanning_count = 0
+            density_sum = 0.0
+            
+            for _ in range(current_samples):
+                is_span, density = simulate_system(L, p)
+                if is_span:
+                    spanning_count += 1
+                density_sum += density
+            
+            Pi_arr.append(spanning_count / current_samples)
+            P_arr.append(density_sum / current_samples)
+            
+        results_Pi[L] = np.array(Pi_arr)
+        results_P[L] = np.array(P_arr)
+
+    # Plotting
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+    
+    # Plot Pi(p, L)
+    for L in L_values:
+        ax1.plot(p_values, results_Pi[L], 'o-', label=f'L={L}', markersize=4, alpha=0.7)
+    
+    # Plot Exact Pi for L=2
+    p_fine = np.linspace(0, 1, 100)
+    pi_exact, p_dens_exact = exact_values_L2(p_fine)
+    ax1.plot(p_fine, pi_exact, 'k--', linewidth=2, label='Exact L=2')
+    
+    ax1.set_title(r'Percolation Probability $\Pi(p, L)$')
+    ax1.set_xlabel('Occupation Probability p')
+    ax1.set_ylabel(r'$\Pi(p, L)$')
+    ax1.axvline(PC_EXACT, color='r', linestyle=':', label=r'$p_c \approx 0.593$')
+    ax1.legend()
+    ax1.grid(True, alpha=0.3)
+
+    # Plot P(p, L)
+    for L in L_values:
+        ax2.plot(p_values, results_P[L], 'o-', label=f'L={L}', markersize=4, alpha=0.7)
+        
+    # Plot Exact P for L=2
+    ax2.plot(p_fine, p_dens_exact, 'k--', linewidth=2, label='Exact L=2')
+
+    ax2.set_title(r'Spanning Cluster Density $P(p, L)$')
+    ax2.set_xlabel('Occupation Probability p')
+    ax2.set_ylabel(r'$P(p, L)$')
+    ax2.axvline(PC_EXACT, color='r', linestyle=':', label=r'$p_c \approx 0.593$')
+    ax2.legend()
+    ax2.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    plt.show()
+    
+    return results_P, p_values
+
+def deduce_scaling_exponent(results_P, p_values):
+    print("\n--- Calculating Scaling Exponent ---")
+    
+    L_large = 128
+    P_large = results_P[L_large]
+    
+    # Filter data for p > pc (scaling region)
+    # Avoid p close to pc nd p close to 1
+    mask = (p_values > PC_EXACT + 0.05) & (p_values < 0.85)
+    
+    x_data = np.log(p_values[mask] - PC_EXACT)
+    y_data = np.log(P_large[mask])
+    
+    # Linear regression
+    slope, intercept = np.polyfit(x_data, y_data, 1)
+    beta = slope
+    
+    print(f"Estimated Scaling Exponent Beta (using L={L_large}): {beta:.4f}")
+    print(f"Theoretical Beta (2D): 5/36 ≈ 0.1389")
+    
+    # Plot Scaling Fit
+    plt.figure(figsize=(7, 5))
+    plt.scatter(x_data, y_data, label='Simulation Data')
+    plt.plot(x_data, slope*x_data + intercept, 'r--', label=f'Fit: slope={beta:.3f}')
+    plt.title(r'Scaling of $P(p, L)$ for $p > p_c$')
+    plt.xlabel(r'$\ln(p - p_c)$')
+    plt.ylabel(r'$\ln P(p, L)$')
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.show()
+
+if __name__ == "__main__":
+    results_P, p_values = run_experiment()
+    deduce_scaling_exponent(results_P, p_values)
