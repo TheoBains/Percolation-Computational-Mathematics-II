@@ -1,1 +1,21 @@
+import networkx as nx
+import matplotlib.pyplot as plt
 
+def frame_cayley_tree(k, d):
+    return nx.balanced_tree(k, d)
+
+# parameters
+k = 3  # branching factors (no. 'children')
+d = 2  # generations
+
+cayley_tree = frame_cayley_tree(k, d)
+
+# labelling nodes
+centre_node = nx.center(cayley_tree)[0]
+children_nodes = list(cayley_tree.neighbors(centre_node))
+labels = {centre_node: 'P'}
+labels.update({child: 'C' for child in children_nodes})
+
+# plotting
+nx.draw(cayley_tree, labels=labels, node_color='#A0D7EF', node_size=300, font_size=15)
+plt.show()
