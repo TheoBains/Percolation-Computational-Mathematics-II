@@ -1,1 +1,36 @@
+#the following code is adapted from Anders Malthe-Sørenssen,
+#'Percolation theory using Python', Section 2.2
+
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.ndimage import label, sum
+
+# parameters
+nsamp = 1000
+L = 1000
+p = 0.90
+
+# collect areas of all clusters for more realisations
+allarea = np.array([])
+for i in range(nsamp):
+    z = np.random.rand(L)
+    m = z<p
+    lw, num = label(m)
+
+    labelList = np.arange(lw.max() + 1)
+    area = sum(m, lw, labelList[1:])
+    allarea = np.append(allarea, area)
+    
+n, sbins = np.histogram(allarea, bins=int(max(allarea)))
+s = 0.5*(sbins[1:] + sbins[:-1])
+nsp = n/(L*nsamp)
+sxi = -1.0/np.log(p)
+nsptheory = (1-p)**2*np.exp(-s/sxi)
+
+# plotting
+plt.plot(s, nsp, 'o', color='#6693F5', markersize=4)
+plt.plot(s, nsptheory, '-', color='#B80F0A')
+plt.xlabel('$s$')
+plt.ylabel('$n(s, p)$')
+plt.show()
 
