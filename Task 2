@@ -40,7 +40,25 @@ plt.ylabel('$n(s, p)$')
 plt.figure(2)
 plt.semilogy(s[i], nsp[i], 'o', color='#0E4C92', markersize=5, markerfacecolor='none')
 plt.semilogy(s, nsptheory, '-', color='#0E4C92')
+
 plt.xlabel('$s$')
 plt.ylabel('$n(s, p)$')
 
+plt.show()
+
+#SEPARATE GRAPH
+import numpy as np
+import matplotlib.pyplot as plt
+
+p = np.linspace(1e-4, 1e0, 10000)
+s = (1 + p)/(1 - p)
+
+# make sure axes are logarithmic
+plt.xscale('log')
+plt.yscale('log')
+
+# plotting
+plt.plot(p, s, color='#0E4C92')
+plt.xlabel('$p$ (Occupation Probability)')
+plt.ylabel('$S(p)$ (Average Cluster Size)')
 plt.show()
