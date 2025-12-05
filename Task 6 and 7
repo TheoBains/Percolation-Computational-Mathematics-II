@@ -7,7 +7,7 @@ PC_EXACT = 0.59275  # Percolation threshold for 2D site percolation (square latt
 
 def simulate_system(L, p):
     """
-    Generates a random lattice and identifies spanning clusters
+    Generates random lattice and identifies spanning clusters
     
     is_spanning (bool): True if any cluster spans the system
     spanning_density (float): Fraction of sites belonging to spanning clusters
@@ -60,10 +60,10 @@ def exact_values_L2(p):
     """
     Returns exact Pi(p, 2) and P(p, 2) for a 2x2 lattice.
     
-    Pi(p, 2) from Eq 1.6 in text: 4p^2(1-p)^2 + 4p^3(1-p) + p^4
+    Pi(p, 2) from page 14 in textbook: 4p^2(1-p)^2 + 4p^3(1-p) + p^4
     Simplifies to 4p^2 - 4p^3 + p^4
     
-    P(p, 2): Derived from configurations
+    P(p, 2): Derived
     Mass sum = p^4*4 + 4*p^3(1-p)*3 + 4*p^2(1-p)^2*2
     Expected Mass = 8p^2 - 4p^3
     Density P = Mass / 4 = 2p^2 - p^3
@@ -124,11 +124,11 @@ def run_experiment():
     pi_exact, p_dens_exact = exact_values_L2(p_fine)
     ax1.plot(p_fine, pi_exact, 'k--', linewidth=2, label='Exact L=2')
     
-    ax1.set_title(r'Percolation Probability $\Pi(p, L)$')
-    ax1.set_xlabel('Occupation Probability p')
-    ax1.set_ylabel(r'$\Pi(p, L)$')
+    ax1.set_title(r'Percolation Probability $\Pi(p, L)$', fontsize=20)
+    ax1.set_xlabel('Occupation Probability p', fontsize=18)
+    ax1.set_ylabel(r'$\Pi(p, L)$', fontsize=18)
     ax1.axvline(PC_EXACT, color='r', linestyle=':', label=r'$p_c \approx 0.593$')
-    ax1.legend()
+    ax1.legend(fontsize=14)
     ax1.grid(True, alpha=0.3)
 
     # Plot P(p, L)
@@ -138,11 +138,11 @@ def run_experiment():
     # Plot Exact P for L=2
     ax2.plot(p_fine, p_dens_exact, 'k--', linewidth=2, label='Exact L=2')
 
-    ax2.set_title(r'Spanning Cluster Density $P(p, L)$')
-    ax2.set_xlabel('Occupation Probability p')
-    ax2.set_ylabel(r'$P(p, L)$')
+    ax2.set_title(r'Spanning Cluster Density $P(p, L)$', fontsize=20)
+    ax2.set_xlabel('Occupation Probability p', fontsize=18)
+    ax2.set_ylabel(r'$P(p, L)$', fontsize=18)
     ax2.axvline(PC_EXACT, color='r', linestyle=':', label=r'$p_c \approx 0.593$')
-    ax2.legend()
+    ax2.legend(fontsize=14)
     ax2.grid(True, alpha=0.3)
     
     plt.tight_layout()
