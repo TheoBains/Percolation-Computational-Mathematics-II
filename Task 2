@@ -1,0 +1,64 @@
+#the following code is adapted from Anders Malthe-Sørenssen,
+#'Percolation theory using Python', Section 2.2
+
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.ndimage import label, sum
+
+# parameters
+nsamp = 1000
+L = 1000
+p = 0.90
+
+# collect areas of all clusters for more realisations
+allarea = np.array([])
+for i in range(nsamp):
+    z = np.random.rand(L)
+    m = z<p
+    lw, num = label(m)
+
+    labelList = np.arange(lw.max() + 1)
+    area = sum(m, lw, labelList[1:])
+    allarea = np.append(allarea, area)
+    
+n, sbins = np.histogram(allarea, bins=int(max(allarea)))
+s = 0.5*(sbins[1:] + sbins[:-1])
+nsp = n/(L*nsamp)
+sxi = -1.0/np.log(p)
+nsptheory = (1-p)**2*np.exp(-s/sxi)
+i = np.nonzero(n) # avoid plotting 0 values
+
+
+# plotting
+plt.figure(1)
+plt.plot(s[i], nsp[i], 'o', color='#0E4C92', markersize=5, markerfacecolor='none')
+plt.plot(s, nsptheory, '-', color='#0E4C92')
+plt.xlabel('$s$')
+plt.ylabel('$n(s, p)$')
+
+# plotting semilog graph
+plt.figure(2)
+plt.semilogy(s[i], nsp[i], 'o', color='#0E4C92', markersize=5, markerfacecolor='none')
+plt.semilogy(s, nsptheory, '-', color='#0E4C92')
+
+plt.xlabel('$s$')
+plt.ylabel('$n(s, p)$')
+
+plt.show()
+
+#SEPARATE GRAPH
+import numpy as np
+import matplotlib.pyplot as plt
+
+p = np.linspace(1e-4, 1e0, 10000)
+s = (1 + p)/(1 - p)
+
+# make sure axes are logarithmic
+plt.xscale('log')
+plt.yscale('log')
+
+# plotting
+plt.plot(p, s, color='#0E4C92')
+plt.xlabel('$p$ (Occupation Probability)')
+plt.ylabel('$S(p)$ (Average Cluster Size)')
+plt.show()

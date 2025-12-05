@@ -1,0 +1,133 @@
+#Scaling Collapse for d=4
+#Takes a very very long time 
+#---------------------------------
+import numpy as np 
+import matplotlib.pyplot as plt 
+from scipy.ndimage import label, sum
+import time
+
+pc = 0.19689 #Percolation threshold to 5sf (cited in paper)
+
+#-----------------------------
+#Parameters
+#Note: Changing any of these can vastly change the values of tau, sigma, and the plot produced. 
+
+L = 100 #System size
+M = 250 #No. of simulations, increase these if you like waiting
+a = 1.2 #Logarithmic binning size, also controls number of points on plot
+
+numvals = 21 #How many tau and sigma are tested each time
+Lowbound = 0.25*L 
+Upbound = 0.05*L**4 #Fine for almost all system sizes
+
+#Values of p to test, do not test values too close to critical value
+#pvals = [0.16, 0.165, 0.17, 0.175, 0.18, 0.185, 0.19]
+#pvals = [0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19]
+pvals = [0.09, 0.11, 0.13, 0.15, 0.17, 0.19]
+
+#From initial testing and refinement (as well as theoretical limits) we have that tau and sigma likely lie in the following intervals: 
+tau = np.linspace(2.3, 2.6, numvals) #Tau value range
+sigma = np.linspace(0.4, 0.6, numvals) #Sigma value range
+besterror = np.inf #Sets a massive error to start, that is beaten by any sensible value of tau and sigma
+besttau = 0
+bestsigma = 0
+
+#-----------------------------
+#Binning, done once to save time
+logamax = np.ceil(np.log(L**4) / np.log(a)) #Worst case scenario
+logbins = a ** np.arange(0, logamax)
+ds = np.diff(logbins)
+smid = np.sqrt(logbins[1:] * logbins[:-1]) #Geo mean
+
+#-----------------------------
+#Computes the histogram for each p instead of having to compute a new one for each tau and sigma. 
+#This is because we only need the values of nsp and smid to get our data points.
+def nsps():
+    allnsp = []
+    deltap = []
+    for p in pvals:
+        deltap.append(abs(p-pc)) #Computes difference between p and p_c
+        allarea = []
+        for i in range(M): 
+            z = np.random.rand(L,L,L,L) 
+            m = z<p 
+            lw, num = label(m) #Sets up the cluster matrix
+            labelList = np.arange(1,lw.max() + 1) #Doesn't count the empty '0' cluster
+            xspan = set(np.intersect1d(lw[0,:,:,:],lw[-1,:,:,:]))
+            yspan = set(np.intersect1d(lw[:,0,:,:],lw[:,-1,:,:]))
+            zspan = set(np.intersect1d(lw[:,:,0,:],lw[:,:,-1,:])) 
+            wspan = set(np.intersect1d(lw[:,:,:,0],lw[:,:,:,-1]))#Finds spanning clusters, and removes duplicates
+            spanning = wspan.union(zspan.union(yspan.union(xspan)))
+            nonspanlist = [j for j in labelList if j not in spanning] #Removes all spanning clusters from list
+            area = sum(m, lw, nonspanlist) 
+            allarea.extend(area)
+        allarea = np.array(allarea) #Gives area of each cluster
+        #Removes 'noise', i.e. clusters way too small or big. We need s>>1 and clusters that don't diverge hence we remove them  
+        allarea = allarea[(allarea > Lowbound) & (allarea <= Upbound)] 
+        nl, nlbins = np.histogram(allarea, bins=logbins)
+        nsp = nl / (M * L**4 * ds) #Calculates n(s,p)
+        allnsp.append(nsp)
+    return allnsp, deltap
+
+def calcaxis(tau, sigma, deltap, nsp): 
+    #Need valid points as some bins have 0 clusters in and hence our nsp there is 0, causing a log(0) error
+    nspfilter = (nsp > 0) & (smid > Lowbound)
+    xpoints = np.log10(smid[nspfilter]**sigma * deltap)
+    ypoints = np.log10(smid[nspfilter]**tau * nsp[nspfilter]) #Computes our x and y data points for each tau, sigma and p
+    return xpoints, ypoints
+
+def scalecollapse(xvals,yvals):
+    #Alls y vals should equal across different values of p 
+    #Thus we check the variance of these y vals to see if this tau and sigma is a good guess
+    tests = 150
+    minx = max(np.min(x) for x in xvals)
+    maxx = min(np.max(x) for x in xvals)  #Calculates shared x axis range
+    if minx >= maxx:
+        return np.nan #No overlap case
+    xgrid = np.linspace(minx,maxx, tests) #Gives xvals to test on
+    ys = np.zeros((len(xvals), len(xgrid))) #zeros function needs tuple e.g. (rows, cols) = (3,4)
+    for i in range(0,len(xvals)):
+        ys[i] = np.interp(xgrid, xvals[i], yvals[i]) #Gives interpolated values
+    cent = ys - ys.mean(axis=0, keepdims=True)
+    meansquare = np.mean(cent**2) #Calculates meean sqaure error of plot
+    return meansquare
+
+#-----------------------------
+#Main Code:
+start = time.time()
+allnsp, deltap = nsps()
+
+for t in tau:
+    for s in sigma:
+        xvals = []
+        yvals = []
+        for i in range(0,len(pvals)):
+            xval, yval = calcaxis(t,s,deltap[i],allnsp[i])
+            xvals.append(xval)
+            yvals.append(yval) #Gives list of y and x vals for each p
+        error = scalecollapse(xvals,yvals) #Test variance for each combination of tau and sigma
+        if error < besterror:
+            besterror = error #New benchmark to beat
+            besttau, bestsigma = t, s #stores our best values
+
+end = time.time()
+            
+print("tau is:", besttau, "sigma is:", bestsigma)
+print("time is:", end-start, "seconds")
+
+#-----------------------------
+#Plotting:
+plt.figure(figsize=(8,6))
+for i, p in enumerate(pvals):
+    x,y = calcaxis(besttau, bestsigma, deltap[i], allnsp[i]) #Gets x and y values for our best sigma and tau
+    plt.plot(x, y, linestyle='-', label=f"p={p}")
+plt.xlabel(r"$\log_{10}(s^\sigma  |p-p_c|)$")
+plt.ylabel(r"$\log_{10}(s^\tau  n(s,p))$")
+plt.legend()
+plt.show()
+
+
+#-----------------------------
+# Final Test (20+ min each):
+# Tau: 2.35, 2.4, 2.45, 2.465, 2.4, 2.4, 2.36, 2.39, 2.375, 2.465, 2.405, 2.42, 2.36, 2.42, 2.4
+# Sigma: 0.49, 0.48, 0.46, 0.46, 0.5, 0.5, 0.53, 0.54, 0.54, 0.49, 0.51, 0.51, 0.53, 0.45, 0.49

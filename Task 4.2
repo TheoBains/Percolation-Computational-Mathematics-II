@@ -7,12 +7,13 @@ import matplotlib.pyplot as plt
 from scipy.ndimage import label, sum
 
 
-# Parameters
-M = 2000       # number of realisations
-L = 120       # lattice size
+# ---- PARAMETERS ----
+M = 250       # number of realisations
+L = 1000       # lattice size
 pvals  = [0.50,0.52,0.54,0.56,0.58]     # occupation probability
-a = 1.2    # logarithmic binning parameter
+a = 1.1    # logarithmic binning parameter
 
+# Calcuates the cluster number density 
 def clusNumDensity(M,L,p,a):
     allarea = np.array([])
 
@@ -25,9 +26,10 @@ def clusNumDensity(M,L,p,a):
         area = sum(m, lw, labelList)
         allarea = np.append(allarea,area)
 
+    # Split into bins
     n,sbins = np.histogram(allarea,bins=int(max(allarea)))
 
-    # Bin centres
+    # Bin centers
     s = 0.5 * (sbins[1:] + sbins[:-1])
 
     # Cluster number density n(s,p;L)
@@ -37,40 +39,39 @@ def clusNumDensity(M,L,p,a):
     i = np.nonzero(n)
 
     # ---- LOG BINS ----
-    logamax = np.ceil(np.log(max(s))/np.log(a))
-    logbins = a**np.arange(0,logamax+1)
-    nl,nlbins = np.histogram(allarea,bins=logbins)
-    ds = np.diff(logbins)
-    sl = 0.5*(logbins[1:]+logbins[:-1])
+    logamax = np.ceil(np.log(max(s))/np.log(a)) 
+    logbins = a**np.arange(0,logamax+1) # number of log-bins 
+    nl,nlbins = np.histogram(allarea,bins=logbins) # split into log-bins
+    ds = np.diff(logbins) # bin size 
+    sl = 0.5*(logbins[1:]+logbins[:-1]) # log-bin centers
     # Cluster number density n(s,p;L)
     nsl = nl/(M * L**2 * ds)
 
     # Remove any empty bins 
-    mask = nsl > 0
-    sl_masked = sl[mask]
-    nsl_masked = nsl[mask]
-
+    sl = sl[nsl > 0]
+    nsl = nsl[nsl > 0]
     
-    return sl_masked, nsl_masked
+    return sl, nsl
 
 # ---- PLOTS ----
 
 # plot for p values in [0.5,0.58]
 plt.figure(figsize=(7,5))
 for p in pvals:
-    sl_masked, nsl_masked = clusNumDensity(M, L, p, a)
-    plt.loglog(sl_masked, nsl_masked, label=f"p = {p}")
+    sl, nsl = clusNumDensity(M, L, p, a)
+    plt.loglog(sl, nsl, label=f"p = {p}")
 
 # log axis
 plt.xscale('log')
 plt.yscale('log')
 # make tick labels larger
-plt.xticks(fontsize=14)
-plt.yticks(fontsize=14)
+plt.xticks(fontsize=15)
+plt.yticks(fontsize=15)
 # axis labels
-plt.xlabel('Cluster Size $s$', fontsize = 15)
-plt.ylabel('Cluster Number Density $n(s,p)$', fontsize=15)
+plt.xlabel('Cluster Size $s$', fontsize = 17)
+plt.ylabel('Cluster Number Density $n(s,p)$', fontsize=17)
 
 plt.legend()
 plt.tight_layout()
 plt.show()
+

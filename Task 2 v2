@@ -1,0 +1,95 @@
+#the following code is adapted from Anders Malthe-Sørenssen,
+#'Percolation theory using Python', Section 2.2
+
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.ndimage import label, sum
+
+# parameters
+nsamp = 1000
+L = 1000
+pvals = [0.2, 0.5,0.9]
+
+# collect areas of all clusters for more realisations
+def clustNumDensity(p, nsamp, L):
+    
+    allarea = np.array([])
+    for i in range(nsamp):
+        z = np.random.rand(L)
+        m = z<p
+        lw, num = label(m)
+
+        labelList = np.arange(lw.max() + 1)
+        area = sum(m, lw, labelList[1:])
+        allarea = np.append(allarea, area)
+        
+    n, sbins = np.histogram(allarea, bins=int(max(allarea)))
+    s = 0.5*(sbins[1:] + sbins[:-1])
+    nsp = n/(L*nsamp)
+    sxi = -1.0/np.log(p)
+    nsptheory = (1-p)**2*np.exp(-s/sxi)
+    i = np.nonzero(n) # avoid plotting 0 values
+
+    return s, nsp, nsptheory, i
+
+
+# ---- PLOTTING ----
+# assign colour to each pvalue
+colours = ["#D62728",   # red
+            "#1f77b4",   # dark blue
+            "#2ca02c"]   # green
+
+#linear figure
+plt.figure(1)
+# for all pvals
+for idx, p in enumerate(pvals):
+    # call function 
+    s, nsp, nsptheory, i = clustNumDensity(p, nsamp, L)
+    #data points
+    plt.plot(s[i], nsp[i], 'o', color=colours[idx],
+             markersize=4, markerfacecolor = 'none',
+             label=f"p = {p}")
+    #theoretical 
+    plt.plot(s, nsptheory, '-', color=colours[idx])
+
+#limit axis for clearer behaviour
+plt.xlim(0, 40)
+plt.ylim(-0.001, 0.13)
+#label axis 
+plt.xlabel('Cluster Size $s$', fontsize = 17)
+plt.ylabel('Cluster Number Density $n(s, p)$', fontsize = 17)
+# make tick labels larger
+plt.xticks(fontsize=15)
+plt.yticks(fontsize=15)
+#legend 
+plt.legend(fontsize = 15)
+
+
+# semi-log figure
+plt.figure(2)
+#for all pvals
+for idx, p in enumerate(pvals):
+    # call function 
+    s, nsp, nsptheory, i = clustNumDensity(p, nsamp, L)
+    # data points
+    plt.semilogy(s[i], nsp[i], 'o', color=colours[idx],
+                 markersize=5, markerfacecolor='none',
+                 label=f"p = {p}")
+    # theoretical
+    plt.semilogy(s, nsptheory, '-', color=colours[idx])
+
+#limit axis for clearer plot
+plt.xlim(0, 120)
+plt.ylim(1e-7, 0.15)
+# label axis
+plt.xlabel('Cluster Size $s$', fontsize = 17)
+plt.ylabel('Cluster Number Density $n(s, p)$', fontsize = 17)
+#make tick labels larger
+plt.xticks(fontsize=15)
+plt.yticks(fontsize=15)
+#legend 
+plt.legend(fontsize = 15)
+
+plt.show()
+
+

@@ -1,0 +1,79 @@
+# The following code is adapted from:
+# Anders Malthe-Sørenssen, 'Percolation Theory Using Python', Ch. 4, Sec. 4.1
+
+# import packages 
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.ndimage import label, sum   
+
+# ---- PARAMETERS ----
+M = 1000       # number of realisations
+L = 200        # lattice size
+p = 0.58      # occupation probability
+
+allarea = []
+
+for _ in range(M):
+    # generate configuration
+    z = np.random.rand(L, L)
+    m = z < p
+    lw, num = label(m)
+    labelList = np.arange(lw.max() + 1)
+    # compute cluster areas 
+    areas = sum(m, lw, labelList)
+    allarea = np.append(allarea, areas)
+
+# ---- LINEAR BINS ----
+# Bins
+n, sbins = np.histogram(allarea, bins=int(max(allarea)))
+s = 0.5*(sbins[1:] + sbins[:-1]) # bin centres 
+# Cluster number density n(s,p;L) = n/ML^2
+nsp = n / (M * L**2)
+# Nonzero indices for plot clarity
+i = np.nonzero(n)
+
+# ---- LOG BINS ----
+a = 1.2     #log binning parameter 
+logamax = np.ceil(np.log(max(s))/np.log(a))
+logbins = a ** np.arange(0, logamax) # number of log-bins
+nl, nlbins = np.histogram(allarea, bins=logbins) # split into log-bins
+ds = np.diff(logbins) # difference between bins 
+sl = 0.5 * (logbins[1:] + logbins[:-1])        # bin centers
+# Cluster number density n(s,p;L)
+nsl = nl / (M * L**2 * ds)
+
+# Remove any empty bins 
+sl= sl[nsl > 0]
+nsl= nsl[nsl > 0]
+
+
+# ---- PLOTS ----
+
+plt.figure(figsize=(12,4))
+# left fig (Linear bins)
+plt.subplot(1,2,1)
+plt.plot(s[i],nsp[i],'o')
+#axis labels
+plt.xlabel('cluster size $s$', fontsize = 14)
+plt.ylabel('cluster number density $n(s,p)$', fontsize = 14)
+#match axis limits in book
+ax = plt.gca()
+ax.set_xlim([0, 1500])
+ax.set_ylim([0, 0.00010])
+# make tick labels larger
+plt.xticks(fontsize=12)
+plt.yticks(fontsize=12)
+
+#right fig (Log-bins)
+plt.subplot(1,2,2)
+plt.loglog(s[i],nsp[i],'o')
+#axis labels
+plt.xlabel('cluster size $s$', fontsize = 14)
+plt.ylabel('cluster number density $n(s,p)$', fontsize = 14)
+# make tick labels larger
+plt.xticks(fontsize=12)
+plt.yticks(fontsize=12)
+# estimate of n(s,p;L) [red line]
+plt.loglog(sl,nsl,'.r')
+
+plt.show()
