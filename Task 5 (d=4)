@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from scipy.ndimage import label, sum
 import time
 
-pc = 0.19689 #Percolation threshold to 5sf (cited in paper)
+pc = 0.196886 #Percolation threshold to 6sf (cited in paper)
 
 #-----------------------------
 #Parameters
