@@ -82,7 +82,7 @@ def run_experiment():
     print("Starting Simulation")
     
     # Parameters
-    L_values = [2, 4, 8, 16, 32, 64, 128] # Powers of two
+    L_values = [2, 4, 8, 16, 32, 64, 2048] # Powers of two
     p_values = np.linspace(0, 1, 50)      # 50 points from 0 to 1
     n_samples = 200                       # Samples per point (increase for smooth curves)
     
@@ -153,7 +153,7 @@ def run_experiment():
 def deduce_scaling_exponent(results_P, p_values):
     print("\n--- Calculating Scaling Exponent ---")
     
-    L_large = 128
+    L_large = 2048
     P_large = results_P[L_large]
     
     # Filter data for p > pc (scaling region)
@@ -174,10 +174,10 @@ def deduce_scaling_exponent(results_P, p_values):
     plt.figure(figsize=(7, 5))
     plt.scatter(x_data, y_data, label='Simulation Data')
     plt.plot(x_data, slope*x_data + intercept, 'r--', label=f'Fit: slope={beta:.3f}')
-    plt.title(r'Scaling of $P(p, L)$ for $p > p_c$')
-    plt.xlabel(r'$\ln(p - p_c)$')
-    plt.ylabel(r'$\ln P(p, L)$')
-    plt.legend()
+    plt.title(r'Scaling of $P(p, L)$ for $p > p_c$', fontsize=20)
+    plt.xlabel(r'$\ln(p - p_c)$',fontsize=18)
+    plt.ylabel(r'$\ln P(p, L)$',fontsize=18)
+    plt.legend(fontsize=14)
     plt.grid(True, alpha=0.3)
     plt.show()
 
