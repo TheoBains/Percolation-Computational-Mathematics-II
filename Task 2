@@ -59,6 +59,8 @@ plt.yscale('log')
 
 # plotting
 plt.plot(p, s, color='#0E4C92')
-plt.xlabel('$p$ (Occupation Probability)')
-plt.ylabel('$S(p)$ (Average Cluster Size)')
+plt.xlabel('$p$ (Occupation Probability)', fontsize=13)
+plt.ylabel('$S(p)$ (Average Cluster Size)', fontsize=13)
+plt.xticks(fontsize=10)
+plt.yticks(fontsize=10)
 plt.show()
